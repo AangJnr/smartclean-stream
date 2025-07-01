@@ -9,11 +9,12 @@ LOCAL_PORT=8888                                 # MediaMTX HLS port
 ### ─────────────────────────────────────────────────────
 
 if [[ "$NGROK_AUTHTOKEN" == "PASTE_YOUR_NGROK_TOKEN_HERE" ]]; then
-  echo "❌  Edit install.sh and set NGROK_AUTHTOKEN before running."
+  echo "❌  Please edit install.sh and set NGROK_AUTHTOKEN before running."
   exit 1
 fi
 
-echo "▶ System update..."
+echo "▶ Updating system..."
+export DEBIAN_FRONTEND=noninteractive
 sudo apt update && sudo apt full-upgrade -y
 
 echo "▶ Installing Docker..."
@@ -25,12 +26,12 @@ sudo apt install -y git curl docker-compose
 echo "▶ Adding user to docker group..."
 sudo usermod -aG docker $USER
 
-# ── Jump into a sub‑shell that already has docker group privileges ──
-echo "▶ Re-entering shell with docker group privileges (newgrp)..."
+# ── Re-enter shell with Docker permissions ──
+echo "▶ Re-entering group 'docker' shell via newgrp…"
 newgrp docker <<EOF
 set -e
 
-# Clone or pull repo
+echo "▶ Cloning or updating repo…"
 if [ ! -d "$PROJECT_DIR" ]; then
   git clone "$REPO_URL" "$PROJECT_DIR"
 else
@@ -39,10 +40,10 @@ else
 fi
 cd "$PROJECT_DIR"
 
-# Run init (skip certbot)
+echo "▶ Starting full stack (MediaMTX + NGINX)…"
 ./init.sh --skip-cert
 
-# ----- ngrok setup -----
+echo "▶ Installing ngrok…"
 curl -fsSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | \
   sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
 echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | \
@@ -50,6 +51,7 @@ echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | \
 sudo apt update && sudo apt install -y ngrok
 ngrok config add-authtoken "$NGROK_AUTHTOKEN"
 
+echo "▶ Setting up ngrok systemd service…"
 sudo bash -c 'cat > /etc/systemd/system/ngrok-stream.service' <<SYSTEMD
 [Unit]
 Description=ngrok SmartClean HLS tunnel
@@ -69,7 +71,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable ngrok-stream
 sudo systemctl start ngrok-stream
 
+echo "▶ Waiting 5 seconds for tunnel to be ready…"
 sleep 5
 PUBLIC_URL=\$(curl -s http://localhost:4040/api/tunnels | grep -Eo "https://[0-9a-z]+\\.ngrok\\.io" | head -n1)
-echo "✅ Public HLS URL: \${PUBLIC_URL}/cam/index.m3u8"
+echo "✅ Public HLS URL:"
+echo "👉  \${PUBLIC_URL}/cam/index.m3u8"
 EOF

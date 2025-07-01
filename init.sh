@@ -28,4 +28,4 @@ echo "▶ Starting full stack..."
 docker-compose down
 docker-compose up -d
 
-echo "✅ All done! Stream URL: https://stream.smartclean.link/cam/index.m3u8"
+echo "✅ All done!"
