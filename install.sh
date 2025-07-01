@@ -29,6 +29,13 @@ else
   git pull
 fi
 
+echo "▶ Re‑entering group 'docker' without logout…"
+newgrp docker <<'EOS'
+set -e
+cd "$HOME/smartclean-stream"
+./init.sh --skip-cert
+EOS
+
 echo "▶ Running init.sh (skip cert)..."
 cd "$PROJECT_DIR"
 ./init.sh --skip-cert
