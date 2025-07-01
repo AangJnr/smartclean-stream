@@ -76,7 +76,7 @@ sudo systemctl enable ngrok-stream
 sudo systemctl restart ngrok-stream
 
 echo "▶ Generating initial placeholder playlist…"
-docker compose run --rm -T placeholder
+docker compose run --rm -T placeholder --remove-orphans
 
 echo "▶ Starting full Docker stack…"
 chmod +x init.sh
