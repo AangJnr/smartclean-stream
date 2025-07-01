@@ -1,11 +1,8 @@
 #!/bin/bash
 set -e
 
-mkdir -p stream
+echo "▶ Starting placeholder..."
+docker compose run --rm placeholder
 
 echo "▶ Starting full stack..."
-
-docker-compose down
-docker-compose up -d
-
-echo "✅ Full stack started."
+docker compose up -d

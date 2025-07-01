@@ -5,38 +5,32 @@ set -e
 PROJECT_DIR="$HOME/smartclean-stream"
 REPO_URL="https://github.com/aangjnr/smartclean-stream.git"
 NGROK_AUTHTOKEN="5188TJ1YjNSmeJUFAVH8d_56Z2SKuTkopBRMCMtYGCK"  # <<< required
-LOCAL_PORT=8888                                 # MediaMTX HLS port
-### ─────────────────────────────────────────────────────
+LOCAL_PORT=8080                      # NGINX serves HLS on 8080
+### ───────────────────────────────────
 
-echo "▶ Updating system & installing dependencies..."
 export DEBIAN_FRONTEND=noninteractive
 
+echo "▶ Updating system & installing dependencies..."
 sudo apt update
 sudo apt install -y curl git docker.io docker-compose unzip
 
-echo "▶ Adding user '$USER' to docker group..."
+echo "▶ Adding '$USER' to docker group..."
 sudo usermod -aG docker "$USER" || true
-
-# Auto-reload groups without logout
 if ! groups | grep -q "\bdocker\b"; then
-  echo "⚠️  Docker group not active. Run: newgrp docker"
+  echo "⚠️  Docker group not active in this shell. Run 'newgrp docker' and re‑run the script, or just reboot later."
 fi
 
-# Create project directory if missing
-echo "▶ Cloning or updating repo…"
-
+echo "▶ Cloning / updating project repo…"
 if [ ! -d "$PROJECT_DIR" ]; then
   git clone "$REPO_URL" "$PROJECT_DIR"
-  cd "$PROJECT_DIR"
 else
-  echo "▶ Using existing project directory"
   cd "$PROJECT_DIR"
   git pull
 fi
+cd "$PROJECT_DIR"
 
-echo "▶ Checking ngrok..."
-if ! command -v ngrok &> /dev/null; then
-  echo "▶ Installing ngrok..."
+echo "▶ Installing ngrok (if missing)…"
+if ! command -v ngrok >/dev/null; then
   curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
     | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
   echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
@@ -44,39 +38,31 @@ if ! command -v ngrok &> /dev/null; then
   sudo apt update && sudo apt install -y ngrok
 fi
 
-# Add token only if config missing
-if [ ! -f "$HOME/.config/ngrok/ngrok.yml" ]; then
-  echo "▶ Adding ngrok authtoken..."
-  ngrok config add-authtoken "$NGROK_AUTHTOKEN"
-fi
+echo "▶ Configuring ngrok authtoken…"
+ngrok config add-authtoken "$NGROK_AUTHTOKEN"
 
-# Symlink ngrok if not visible to systemd
+# Ensure systemd can find ngrok
 if [[ -x "/usr/local/bin/ngrok" && ! -e "/usr/bin/ngrok" ]]; then
-  echo "▶ Symlinking ngrok..."
+  echo "▶ Symlinking ngrok to /usr/bin"
   sudo ln -s /usr/local/bin/ngrok /usr/bin/ngrok
 fi
 
-# Detect real ngrok binary
 NGROK_BIN=$(command -v ngrok)
 if [ -z "$NGROK_BIN" ]; then
-  echo "❌ ngrok not found in path."
+  echo "❌ ngrok binary not found. Aborting."
   exit 1
 fi
-echo "✅ ngrok found at $NGROK_BIN"
 
-# Create or update systemd service
-NGUSER=$(logname)
-echo "▶ Writing ngrok-stream.service..."
-
+echo "▶ Writing /etc/systemd/system/ngrok-stream.service"
 sudo tee /etc/systemd/system/ngrok-stream.service >/dev/null <<EOF
 [Unit]
-Description=ngrok SmartClean HLS Tunnel
+Description=Ngrok SmartClean HLS Tunnel
 After=network-online.target docker.service
 Requires=docker.service
 
 [Service]
-User=$NGUSER
-ExecStart=$NGROK_BIN http $LOCAL_PORT --log stdout
+User=$(logname)
+ExecStart=${NGROK_BIN} http ${LOCAL_PORT} --log stdout
 Restart=on-failure
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -84,30 +70,31 @@ Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 WantedBy=multi-user.target
 EOF
 
-echo "▶ Reloading systemd & enabling ngrok service..."
+echo "▶ Enabling and (re)starting ngrok-stream.service"
 sudo systemctl daemon-reload
 sudo systemctl enable ngrok-stream
 sudo systemctl restart ngrok-stream
 
-echo "▶ Starting stream stack..."
+echo "▶ Generating initial placeholder playlist…"
+docker compose run --rm placeholder
+
+echo "▶ Starting full Docker stack…"
 chmod +x init.sh
-./init.sh
+./init.sh                 # runs: docker compose up -d
 
-# Wait for ngrok
-
-echo "▶ Waiting for ngrok tunnel to be ready..."
-sleep 20
-
+echo "▶ Waiting for ngrok tunnel (max 20s)…"
 for i in {1..10}; do
-  PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | grep -Eo "https://[a-z0-9]+\.ngrok\.io" | head -n1)
+  PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | grep -Eo 'https://[a-z0-9.-]+\.ngrok\.io' | head -n1)
   [ -n "$PUBLIC_URL" ] && break
   sleep 2
 done
 
 if [ -n "$PUBLIC_URL" ]; then
-  echo "✅ HLS stream is public at:"
-  echo "👉  $PUBLIC_URL/cam/index.m3u8"
+  echo ""
+  echo "✅ Public HLS stream ready!"
+  echo "👉  ${PUBLIC_URL}/cam/index.m3u8"
+  echo ""
 else
-  echo "❌ ngrok tunnel could not be detected. Run:"
-  echo "   sudo journalctl -u ngrok-stream -f"
+  echo "❌ ngrok tunnel not detected."
+  echo "   Check with:  sudo journalctl -u ngrok-stream -f"
 fi
