@@ -1,0 +1,12 @@
+logLevel: info
+
+hls:
+  enabled: yes
+  alwaysRemux: yes
+  allowOrigin: "*"
+
+paths:
+  cam:
+    source: rtsp://demo@smartclean.se:Cleansmart1%@10.0.7.141:554/stream1
+    runOnDemand: yes
+    runOnDemandCloseAfter: 60s
