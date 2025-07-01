@@ -71,9 +71,20 @@ sudo systemctl daemon-reload
 sudo systemctl enable ngrok-stream
 sudo systemctl start ngrok-stream
 
-echo "▶ Waiting 5 seconds for tunnel to be ready…"
-sleep 5
-PUBLIC_URL=\$(curl -s http://localhost:4040/api/tunnels | grep -Eo "https://[0-9a-z]+\\.ngrok\\.io" | head -n1)
-echo "✅ Public HLS URL:"
-echo "👉  \${PUBLIC_URL}/cam/index.m3u8"
+echo "▶ Waiting for ngrok tunnel to be ready…"
+TRIES=0
+while [[ -z "$PUBLIC_URL" && $TRIES -lt 10 ]]; do
+  sleep 2
+  PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | grep -Eo "https://[0-9a-z]+\\.ngrok\\.io" | head -n1)
+  ((TRIES++))
+done
+
+if [[ -n "$PUBLIC_URL" ]]; then
+  echo "✅ Public HLS URL:"
+  echo "👉  ${PUBLIC_URL}/cam/index.m3u8"
+else
+  echo "❌ Failed to get public URL from ngrok."
+  echo "Run this to check:"
+  echo "  curl -s http://localhost:4040/api/tunnels"
+fi
 EOF
