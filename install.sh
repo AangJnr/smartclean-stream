@@ -52,11 +52,9 @@ sudo apt update && sudo apt install -y ngrok
 ngrok config add-authtoken "$NGROK_AUTHTOKEN"
 
 # Detect ngrok binary location
-NGROK_BIN="$(command -v ngrok)"
-if [[ -z "$NGROK_BIN" ]]; then
-  echo "❌  ngrok binary not found even after install."
-  exit 1
-fi
+NGROK_BIN=$(command -v ngrok 2>/dev/null || true)
+[ -z "$NGROK_BIN" ] && [ -x "/usr/local/bin/ngrok" ] && NGROK_BIN="/usr/local/bin/ngrok"
+[ -z "$NGROK_BIN" ] && { echo "❌  ngrok not found."; exit 1; }
 echo "▶ ngrok found at ${NGROK_BIN}"
 
 echo "▶ Creating systemd service for ngrok tunnel…"
