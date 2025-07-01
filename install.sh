@@ -51,14 +51,14 @@ echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
 sudo apt update && sudo apt install -y ngrok
 ngrok config add-authtoken "$NGROK_AUTHTOKEN"
 
-# Detect ngrok binary location
-NGROK_BIN=$(command -v ngrok 2>/dev/null || true)
-[ -z "$NGROK_BIN" ] && [ -x "/usr/local/bin/ngrok" ] && NGROK_BIN="/usr/local/bin/ngrok"
-[ -z "$NGROK_BIN" ] && { echo "❌  ngrok not found."; exit 1; }
-echo "▶ ngrok found at ${NGROK_BIN}"
+# Ensure ngrok is available at /usr/bin/ngrok for systemd
+if [[ -x "/usr/local/bin/ngrok" && ! -e "/usr/bin/ngrok" ]]; then
+  echo "▶ Creating symlink for ngrok..."
+  sudo ln -s /usr/local/bin/ngrok /usr/bin/ngrok
+fi
 
 echo "▶ Creating systemd service for ngrok tunnel…"
-NGUSER=$(logname)    # actual login user (pi)
+NGUSER=$(logname)
 sudo bash -c "cat > /etc/systemd/system/ngrok-stream.service" <<SYSTEMD
 [Unit]
 Description=ngrok SmartClean HLS tunnel
