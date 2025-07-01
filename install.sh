@@ -94,7 +94,10 @@ chmod +x init.sh
 ./init.sh
 
 # Wait for ngrok
+
 echo "▶ Waiting for ngrok tunnel to be ready..."
+sleep 20
+
 for i in {1..10}; do
   PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | grep -Eo "https://[a-z0-9]+\.ngrok\.io" | head -n1)
   [ -n "$PUBLIC_URL" ] && break

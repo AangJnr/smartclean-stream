@@ -8,5 +8,5 @@ hls:
 paths:
   cam:
     source: rtsp://demo@smartclean.se:Cleansmart1%@10.0.7.141:554/stream1
-    runOnDemand: yes
+    sourceOnDemand: yes
     runOnReady: ffmpeg -i rtsp://localhost:8554/cam -c:v copy -f hls -hls_time 2 -hls_list_size 3 -hls_flags delete_segments /usr/share/nginx/html/cam/index.m3u8
