@@ -9,6 +9,8 @@ LOCAL_PORT=8888                                 # MediaMTX HLS port
 ### ─────────────────────────────────────────────────────
 
 echo "▶ Updating system & installing dependencies..."
+export DEBIAN_FRONTEND=noninteractive
+
 sudo apt update
 sudo apt install -y curl git docker.io docker-compose unzip
 
@@ -28,6 +30,7 @@ if [ ! -d "$PROJECT_DIR" ]; then
 else
   cd "$PROJECT_DIR"
   git pull
+
   echo "▶ Using existing project directory"
 fi
 
