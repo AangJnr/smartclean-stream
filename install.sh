@@ -23,18 +23,16 @@ if ! groups | grep -q "\bdocker\b"; then
 fi
 
 # Create project directory if missing
+echo "▶ Cloning or updating repo…"
+
 if [ ! -d "$PROJECT_DIR" ]; then
-  echo "▶ Cloning project..."
-  git clone https://github.com/aangjnr/smartclean-stream.git "$PROJECT_DIR"
+  git clone "$REPO_URL" "$PROJECT_DIR"
   cd "$PROJECT_DIR"
 else
   echo "▶ Using existing project directory"
   cd "$PROJECT_DIR"
-  ls
   git pull
-  echo "▶ Using existing project directory"
 fi
-
 
 echo "▶ Checking ngrok..."
 if ! command -v ngrok &> /dev/null; then
