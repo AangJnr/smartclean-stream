@@ -1,50 +1,73 @@
 #!/bin/bash
-# One-command installer for a fresh Raspberry Pi (Debian-based)
-# Usage: curl -sSL https://raw.githubusercontent.com/aangjnr/smartclean-stream/main/install.sh | bash
-#!/bin/bash
 set -e
 
+### ─────────────── USER‑EDITABLE SECTION ───────────────
 PROJECT_DIR="$HOME/smartclean-stream"
 REPO_URL="https://github.com/aangjnr/smartclean-stream.git"
-DOMAIN="stream.smartclean.link"         # set once here
+NGROK_AUTHTOKEN="5188TJ1YjNSmeJUFAVH8d_56Z2SKuTkopBRMCMtYGCK"  # <<< required
+LOCAL_PORT=8888                                 # MediaMTX HLS port
+### ─────────────────────────────────────────────────────
+
+if [[ "$NGROK_AUTHTOKEN" == "PASTE_YOUR_NGROK_TOKEN_HERE" ]]; then
+  echo "❌  Please edit install.sh and set NGROK_AUTHTOKEN."
+  exit 1
+fi
 
 echo "▶ Updating system..."
 sudo apt update && sudo apt full-upgrade -y
 
-echo "▶ Installing Docker..."
+echo "▶ Installing Docker & Docker Compose..."
 curl -fsSL https://get.docker.com | sh
-
-echo "▶ Installing Git, Curl, Docker Compose..."
+sudo usermod -aG docker $USER
 sudo apt install -y git curl docker-compose
 
-echo "▶ Adding user to docker group..."
-sudo usermod -aG docker $USER
-
-# ------------------------------------------------------------------
-# **Refresh group membership for current script** (no logout needed)
-echo "▶ Refreshing group membership..."
-newgrp docker <<'EOF'
-set -e
-
-PROJECT_DIR="$HOME/smartclean-stream"
-REPO_URL="https://github.com/aangjnr/smartclean-stream.git"
-
+echo "▶ Cloning or updating repo..."
 if [ ! -d "$PROJECT_DIR" ]; then
-  echo "▶ Cloning repo..."
   git clone "$REPO_URL" "$PROJECT_DIR"
 else
-  echo "▶ Pulling latest changes..."
   cd "$PROJECT_DIR"
   git pull
 fi
 
+echo "▶ Running init.sh (skip cert)..."
 cd "$PROJECT_DIR"
+./init.sh --skip-cert
 
-# Pass domain down to init.sh via environment
-export STREAM_DOMAIN="stream.smartclean.link"
+echo "▶ Installing ngrok..."
+curl -fsSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+  | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+  | sudo tee /etc/apt/sources.list.d/ngrok.list
+sudo apt update && sudo apt install -y ngrok
 
-./init.sh --skip-cert-check
+echo "▶ Configuring ngrok authtoken..."
+ngrok config add-authtoken "$NGROK_AUTHTOKEN"
+
+echo "▶ Creating systemd service for ngrok tunnel..."
+SERVICE_FILE="/etc/systemd/system/ngrok-stream.service"
+sudo bash -c "cat > $SERVICE_FILE" <<EOF
+[Unit]
+Description=ngrok SmartClean HLS tunnel
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/ngrok http $LOCAL_PORT --log stdout
+Restart=on-failure
+User=$USER
+Environment=NGROK_AUTHTOKEN=$NGROK_AUTHTOKEN
+
+[Install]
+WantedBy=multi-user.target
 EOF
-# ------------------------------------------------------------------
 
-echo "✅ All done!  If you open a new terminal you’ll have docker access automatically."
+sudo systemctl daemon-reload
+sudo systemctl enable ngrok-stream
+sudo systemctl start ngrok-stream
+
+echo "✅ Installation complete!"
+echo "⏳ Waiting 5 sec for ngrok to establish tunnel..."
+sleep 5
+PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | grep -Eo 'https://[0-9a-z]+\.ngrok.io')
+echo "🌐 Public HLS URL: ${PUBLIC_URL}/cam/index.m3u8"
+echo "Embed that in your frontend player."
