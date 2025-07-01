@@ -28,9 +28,10 @@ if [ ! -d "$PROJECT_DIR" ]; then
   git clone https://github.com/aangjnr/smartclean-stream.git "$PROJECT_DIR"
   cd "$PROJECT_DIR"
 else
+  echo "▶ Using existing project directory"
   cd "$PROJECT_DIR"
+  ls
   git pull
-
   echo "▶ Using existing project directory"
 fi
 
