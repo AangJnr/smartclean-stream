@@ -9,72 +9,67 @@ LOCAL_PORT=8888                                 # MediaMTX HLS port
 ### ─────────────────────────────────────────────────────
 
 if [[ "$NGROK_AUTHTOKEN" == "PASTE_YOUR_NGROK_TOKEN_HERE" ]]; then
-  echo "❌  Please edit install.sh and set NGROK_AUTHTOKEN."
+  echo "❌  Edit install.sh and set NGROK_AUTHTOKEN before running."
   exit 1
 fi
 
-echo "▶ Updating system..."
+echo "▶ System update..."
 sudo apt update && sudo apt full-upgrade -y
 
-echo "▶ Installing Docker & Docker Compose..."
+echo "▶ Installing Docker..."
 curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
+
+echo "▶ Installing Git, Curl, Docker Compose..."
 sudo apt install -y git curl docker-compose
 
-echo "▶ Cloning or updating repo..."
+echo "▶ Adding user to docker group..."
+sudo usermod -aG docker $USER
+
+# ── Jump into a sub‑shell that already has docker group privileges ──
+echo "▶ Re-entering shell with docker group privileges (newgrp)..."
+newgrp docker <<EOF
+set -e
+
+# Clone or pull repo
 if [ ! -d "$PROJECT_DIR" ]; then
   git clone "$REPO_URL" "$PROJECT_DIR"
 else
   cd "$PROJECT_DIR"
   git pull
 fi
-
-echo "▶ Re‑entering group 'docker' without logout…"
-newgrp docker <<'EOS'
-set -e
-cd "$HOME/smartclean-stream"
-./init.sh --skip-cert
-EOS
-
-echo "▶ Running init.sh (skip cert)..."
 cd "$PROJECT_DIR"
+
+# Run init (skip certbot)
 ./init.sh --skip-cert
 
-echo "▶ Installing ngrok..."
-curl -fsSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
-  | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
-  | sudo tee /etc/apt/sources.list.d/ngrok.list
+# ----- ngrok setup -----
+curl -fsSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | \
+  sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | \
+  sudo tee /etc/apt/sources.list.d/ngrok.list
 sudo apt update && sudo apt install -y ngrok
-
-echo "▶ Configuring ngrok authtoken..."
 ngrok config add-authtoken "$NGROK_AUTHTOKEN"
 
-echo "▶ Creating systemd service for ngrok tunnel..."
-SERVICE_FILE="/etc/systemd/system/ngrok-stream.service"
-sudo bash -c "cat > $SERVICE_FILE" <<EOF
+sudo bash -c 'cat > /etc/systemd/system/ngrok-stream.service' <<SYSTEMD
 [Unit]
 Description=ngrok SmartClean HLS tunnel
 After=network-online.target docker.service
 Requires=docker.service
 
 [Service]
-ExecStart=/usr/bin/ngrok http $LOCAL_PORT --log stdout
+ExecStart=/usr/bin/ngrok http ${LOCAL_PORT} --log stdout
 Restart=on-failure
 User=$USER
-Environment=NGROK_AUTHTOKEN=$NGROK_AUTHTOKEN
 
 [Install]
 WantedBy=multi-user.target
-EOF
+SYSTEMD
 
 sudo systemctl daemon-reload
 sudo systemctl enable ngrok-stream
 sudo systemctl start ngrok-stream
 
-echo "✅ Installation complete!"
-echo "⏳ Waiting 5 sec for ngrok to establish tunnel..."
 sleep 5
-PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | grep -Eo 'https://[0-9a-z]+\.ngrok.io')
-echo "🌐 Public HLS URL: ${PUBLIC_URL}/cam/index.m3u8"
-echo "Embed that in your frontend player."
+PUBLIC_URL=\$(curl -s http://localhost:4040/api/tunnels | grep -Eo "https://[0-9a-z]+\\.ngrok\\.io" | head -n1)
+echo "✅ Public HLS URL: \${PUBLIC_URL}/cam/index.m3u8"
+EOF
