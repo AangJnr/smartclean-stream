@@ -20,11 +20,12 @@ if ! groups | grep -q "\bdocker\b"; then
   echo "⚠️  Docker group not active in this shell. Run 'newgrp docker' and re‑run the script, or just reboot later."
 fi
 
-echo "▶ Cloning / updating project repo…"
 if [ ! -d "$PROJECT_DIR" ]; then
+  echo "▶ Cloning project repo…"
   git clone "$REPO_URL" "$PROJECT_DIR"
   cd "$PROJECT_DIR"
 else
+  echo "▶ Updating project repo…"
   cd "$PROJECT_DIR"
   git stash
   git pull
