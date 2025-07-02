@@ -80,6 +80,8 @@ docker compose run --rm -T placeholder
 
 echo "▶ Starting full Docker stack…"
 chmod +x init.sh
+chmod +x generate-placeholder.sh
+
 ./init.sh                 # runs: docker compose up -d
 
 echo "▶ Waiting for ngrok tunnel (max 20s)…"
