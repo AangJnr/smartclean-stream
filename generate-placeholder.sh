@@ -1,17 +1,15 @@
 #!/bin/bash
 set -e
+cd "$(dirname "$0")"
 
-PROJECT_DIR="$HOME/smartclean-stream"
-STREAM_DIR="$PROJECT_DIR/stream/cam"
-
-mkdir -p "$STREAM_DIR"
-rm -rf "$STREAM_DIR"/*
+mkdir -p ./stream/cam
+rm -rf ./stream/cam/*
 
 echo "▶ Generating placeholder HLS stream from video..."
 
-ffmpeg -y -re -i "$PROJECT_DIR/placeholder.mp4" \
+ffmpeg -y -nostdin -re -i placeholder.mp4 \
   -c:v libx264 -c:a aac -preset veryfast \
-  -f hls -hls_time 2 -hls_list_size 3 -hls_flags delete_segments \
-  "$STREAM_DIR/index.m3u8"
+  -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments \
+  ./stream/cam/index.m3u8
 
-echo "✅ HLS placeholder stream generated at $STREAM_DIR"
+echo "✅ Placeholder stream ready."
