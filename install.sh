@@ -84,6 +84,5 @@ chmod +x generate-placeholder.sh
 
 ./init.sh                 # runs: docker compose up -d
 
-echo "▶ Waiting for ngrok tunnel (max 20s)…"
 sleep 10
 curl -s http://localhost:4040/api/tunnels
