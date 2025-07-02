@@ -83,18 +83,5 @@ chmod +x generate-placeholder.sh
 ./init.sh                 # runs: docker compose up -d
 
 echo "▶ Waiting for ngrok tunnel (max 20s)…"
-for i in {1..10}; do
-  PUBLIC_URL=$(curl -s http://localhost:4040/api/tunnels | grep -Eo 'https://[a-z0-9.-]+\.ngrok\.io' | head -n1)
-  [ -n "$PUBLIC_URL" ] && break
-  sleep 2
-done
-
-if [ -n "$PUBLIC_URL" ]; then
-  echo ""
-  echo "✅ Public HLS stream ready!"
-  echo "👉  ${PUBLIC_URL}/cam/index.m3u8"
-  echo ""
-else
-  echo "❌ ngrok tunnel not detected."
-  echo "   Check with:  sudo journalctl -u ngrok-stream -f"
-fi
+sleep 10
+curl -s http://localhost:4040/api/tunnels

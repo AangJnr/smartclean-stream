@@ -20,6 +20,8 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./stream:/usr/share/nginx/html:rw
+      - ./stream:/usr/share/nginx/html/cam
+
 
   placeholder:
     image: busybox
