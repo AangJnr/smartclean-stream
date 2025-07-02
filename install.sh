@@ -23,11 +23,11 @@ fi
 echo "▶ Cloning / updating project repo…"
 if [ ! -d "$PROJECT_DIR" ]; then
   git clone "$REPO_URL" "$PROJECT_DIR"
+  cd "$PROJECT_DIR"
 else
   cd "$PROJECT_DIR"
   git pull
 fi
-cd "$PROJECT_DIR"
 
 echo "▶ Installing ngrok (if missing)…"
 if ! command -v ngrok >/dev/null; then
