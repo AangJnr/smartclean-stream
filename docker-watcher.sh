@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-WEBHOOK_URL="https://us-central1-smartclean-1333e.cloudfunctions.net/updateStreamUrl"      # <‑‑ replace with your webhook
+WEBHOOK_URL="https://updatestreamurl-lwghhtnp6q-uc.a.run.app"      # <‑‑ replace with your webhook
 NGROK_API="http://localhost:4040/api/tunnels"
 PROJECT="smartclean-stream"
 
