@@ -72,15 +72,36 @@ Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 WantedBy=multi-user.target
 EOF
 
+
+echo "▶ Writing /etc/systemd/system/docker-watcher.service"
+sudo tee /etc/systemd/system/docker-watcher.service >/dev/null <<EOF
+[Unit]
+Description=Docker‑Watcher — notify webhook with ngrok tunnel
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/home/admin/smartclean-stream/docker-watcher.sh
+Restart=always
+RestartSec=3
+User=$(logname)
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 echo "▶ Enabling and (re)starting ngrok-stream.service"
 sudo systemctl daemon-reload
 sudo systemctl enable ngrok-stream
+sudo systemctl enable --now docker-watcher
 sudo systemctl restart ngrok-stream
 
 
 echo "▶ Starting full Docker stack…"
 chmod +x init.sh
 chmod +x generate-placeholder.sh
+chmod +x docker-watcher.sh
+
 
 ./init.sh                 # runs: docker compose up -d
 
