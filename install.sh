@@ -26,6 +26,7 @@ if [ ! -d "$PROJECT_DIR" ]; then
   cd "$PROJECT_DIR"
 else
   cd "$PROJECT_DIR"
+  git stash
   git pull
 fi
 
