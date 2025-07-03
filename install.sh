@@ -64,7 +64,7 @@ Requires=docker.service
 
 [Service]
 User=$(logname)
-ExecStart=${NGROK_BIN} http ${LOCAL_PORT} --log stdout
+ExecStart=${NGROK_BIN} http --domain=stallion-engaged-steadily.ngrok-free.app ${LOCAL_PORT} --log stdout
 Restart=on-failure
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
