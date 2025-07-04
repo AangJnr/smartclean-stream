@@ -62,12 +62,12 @@ sudo tee "$HOME/.config/ngrok/ngrok.yml" > /dev/null <<EOF
 version: "3"
 agent:
     authtoken: $NGROK_AUTHTOKEN
-    region: eu
 
 tunnels:
     stream:
       proto: http
       addr: 8888
+      domain: stallion-engaged-steadily.ngrok-free.app
     ssh:
       proto: tcp
       addr: 22
@@ -82,7 +82,7 @@ Requires=docker.service
 
 [Service]
 User=$(logname)
-ExecStart=${NGROK_BIN} start --all --config $HOME/.ngrok2/ngrok.yml
+ExecStart=${NGROK_BIN} start --all --config $HOME/.config/ngrok/ngrok.yml
 Restart=on-failure
 
 [Install]
@@ -129,5 +129,3 @@ chmod +x docker-watcher.sh
 sleep 10
 curl -s http://localhost:4040/api/tunnels
 
-
-##--domain=stallion-engaged-steadily.ngrok-free.app
