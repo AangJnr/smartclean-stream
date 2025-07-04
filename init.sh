@@ -15,4 +15,4 @@ echo "▶ Generating thumbnail-based HLS..."
 ./generate-placeholder.sh
 
 echo "▶ Starting full stack..."
-docker compose up -d --remove-orphans
+docker-compose up -d --remove-orphans
