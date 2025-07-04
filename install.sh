@@ -55,20 +55,22 @@ if [ -z "$NGROK_BIN" ]; then
   exit 1
 fi
 
-echo "▶ Writing $HOME/.ngrok2/ngrok.yml"
-mkdir -p "$HOME/.ngrok2"
+echo "▶ Writing $HOME/.config/ngrok/ngrok.yml"
+mkdir -p "$HOME/.config/ngrok"
 
-sudo tee "$HOME/.ngrok2/ngrok.yml" > /dev/null <<EOF
-authtoken: $NGROK_AUTHTOKEN
-region: eu
+sudo tee "$HOME/.config/ngrok/ngrok.yml" > /dev/null <<EOF
+version: "3"
+agent:
+    authtoken: $NGROK_AUTHTOKEN
+    region: eu
 
 tunnels:
-  stream:
-    proto: http
-    addr: 8888
-  ssh:
-    proto: tcp
-    addr: 22
+    stream:
+      proto: http
+      addr: 8888
+    ssh:
+      proto: tcp
+      addr: 22
 EOF
 
 echo "▶ Writing /etc/systemd/system/ngrok-stream.service"
