@@ -57,7 +57,8 @@ fi
 
 echo "▶ Writing $HOME/.ngrok2/ngrok.yml"
 mkdir -p "$HOME/.ngrok2"
-cat <<EOF > "$HOME/.ngrok2/ngrok.yml"
+
+sudo tee "$HOME/.ngrok2/ngrok.yml" > /dev/null <<EOF
 authtoken: $NGROK_AUTHTOKEN
 region: eu
 
@@ -81,7 +82,6 @@ Requires=docker.service
 User=$(logname)
 ExecStart=${NGROK_BIN} start --all --config $HOME/.ngrok2/ngrok.yml
 Restart=on-failure
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 [Install]
 WantedBy=multi-user.target
@@ -96,7 +96,7 @@ After=network-online.target docker.service
 Requires=docker.service
 
 [Service]
-ExecStart=/home/admin/smartclean-stream/docker-watcher.sh
+ExecStart=$HOME/smartclean-stream/docker-watcher.sh
 Restart=always
 RestartSec=3
 User=$(logname)
