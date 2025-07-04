@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+  <head>
+    <title>SmartClean Stream</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #222;
+        color: #fff;
+        text-align: center;
+        padding-top: 20vh;
+      }
+      .video-container {
+        width: 40vw;
+        height: 40vh;
+        align-items: center;
+        justify-content: center;
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body class="">
+    <h1>📡 SmartClean Stream service</h1>
+    <p>Congratulations! Your stream service is up and running!.</p>
+    <div
+      class="video-container"
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+      "
+    >
+      <video id="video" controls autoplay muted playsinline></video>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+    <script>
+      const video = document.getElementById("video");
+      const refreshBtn = document.getElementById("refreshBtn");
+
+
+      let hls;
+
+      function setupStream(url) {
+        if (!url?.trim()) return;
+
+        if (Hls.isSupported()) {
+          if (hls) {
+            hls.destroy();
+          }
+
+          hls = new Hls();
+          hls.loadSource(url);
+          hls.attachMedia(video);
+
+          hls.on(Hls.Events.ERROR, function (event, data) {
+            console.error("HLS.js error:", data);
+          });
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = url;
+        } else {
+          console.error("HLS not supported in this browser.");
+        }
+      }
+
+      // Initial setup
+      setupStream("placeholder/index.m3u8");
+
+    </script>
+  </body>
+</html>

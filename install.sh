@@ -5,7 +5,7 @@ set -e
 PROJECT_DIR="$HOME/smartclean-stream"
 REPO_URL="https://github.com/aangjnr/smartclean-stream.git"
 NGROK_AUTHTOKEN="5188TJ1YjNSmeJUFAVH8d_56Z2SKuTkopBRMCMtYGCK"  # <<< required
-LOCAL_PORT=8080                      # NGINX serves HLS on 8080
+LOCAL_PORT=8888                      # NGINX serves HLS on 8080
 ### ───────────────────────────────────
 
 export DEBIAN_FRONTEND=noninteractive
@@ -64,7 +64,7 @@ Requires=docker.service
 
 [Service]
 User=$(logname)
-ExecStart=${NGROK_BIN} http --domain=stallion-engaged-steadily.ngrok-free.app ${LOCAL_PORT} --log stdout
+ExecStart=${NGROK_BIN} http ${LOCAL_PORT} --log stdout
 Restart=on-failure
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -90,10 +90,30 @@ User=$(logname)
 WantedBy=multi-user.target
 EOF
 
+
+echo "▶ Writing /etc/systemd/system/ngrok-ssh.service"
+sudo tee /etc/systemd/system/ngrok-ssh.service >/dev/null <<EOF
+[Unit]
+Description=ngrok TCP tunnel for SSH
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=$(logname)
+ExecStart=/usr/bin/ngrok tcp 22
+Restart=on-failure
+Environment=NGROK_AUTHTOKEN=YOUR_AUTHTOKEN
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 echo "▶ Enabling and (re)starting ngrok-stream.service"
 sudo systemctl daemon-reload
 sudo systemctl enable ngrok-stream
 sudo systemctl enable --now docker-watcher
+sudo systemctl enable --now ngrok-ssh
+
 sudo systemctl restart ngrok-stream
 
 
@@ -107,3 +127,6 @@ chmod +x docker-watcher.sh
 
 sleep 10
 curl -s http://localhost:4040/api/tunnels
+
+
+##--domain=stallion-engaged-steadily.ngrok-free.app
