@@ -18,9 +18,9 @@ until curl -sf "$NGROK_API" >/dev/null; do
   echo "⏳ Waiting for ngrok API …"
   sleep 3
   RETRIES=$((RETRIES - 1))
-
-if [[ $RETRIES == 0 ]]; then
+  if [[ $RETRIES == 0 ]]; then
     break
+  fi
 done
 
 # Function: fetch tunnels + send
