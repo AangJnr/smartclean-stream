@@ -11,10 +11,16 @@ PROJECT="smartclean-stream"
 
 echo "📡 Docker‑Watcher for $PROJECT started …"
 
+RETRIES=5
+
 # Wait until ngrok’s local API is reachable (boot safety)
 until curl -sf "$NGROK_API" >/dev/null; do
   echo "⏳ Waiting for ngrok API …"
-  sleep 2
+  sleep 3
+  RETRIES=$((RETRIES - 1))
+
+if [[ $RETRIES == 0 ]]; then
+    break
 done
 
 # Function: fetch tunnels + send

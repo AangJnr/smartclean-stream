@@ -55,16 +55,31 @@ if [ -z "$NGROK_BIN" ]; then
   exit 1
 fi
 
+echo "▶ Writing $HOME/.ngrok2/ngrok.yml"
+mkdir -p "$HOME/.ngrok"
+cat <<EOF > "$HOME/.ngrok2/ngrok.yml"
+authtoken: $NGROK_AUTHTOKEN
+region: eu
+
+tunnels:
+  stream:
+    proto: http
+    addr: 8888
+  ssh:
+    proto: tcp
+    addr: 22
+EOF
+
 echo "▶ Writing /etc/systemd/system/ngrok-stream.service"
 sudo tee /etc/systemd/system/ngrok-stream.service >/dev/null <<EOF
 [Unit]
-Description=Ngrok SmartClean HLS Tunnel
+Description=Ngrok SmartClean HLS Tunnel plus ssh
 After=network-online.target docker.service
 Requires=docker.service
 
 [Service]
 User=$(logname)
-ExecStart=${NGROK_BIN} http ${LOCAL_PORT} --log stdout
+ExecStart=${NGROK_BIN} start --all --config $HOME/.ngrok2/ngrok.yml
 Restart=on-failure
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -91,30 +106,14 @@ WantedBy=multi-user.target
 EOF
 
 
-echo "▶ Writing /etc/systemd/system/ngrok-ssh.service"
-sudo tee /etc/systemd/system/ngrok-ssh.service >/dev/null <<EOF
-[Unit]
-Description=ngrok TCP tunnel for SSH
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=$(logname)
-ExecStart=/usr/bin/ngrok tcp 22
-Restart=on-failure
-Environment=NGROK_AUTHTOKEN=YOUR_AUTHTOKEN
-
-[Install]
-WantedBy=multi-user.target
-EOF
 
 echo "▶ Enabling and (re)starting ngrok-stream.service"
 sudo systemctl daemon-reload
 sudo systemctl enable ngrok-stream
 sudo systemctl enable --now docker-watcher
-sudo systemctl enable --now ngrok-ssh
 
 sudo systemctl restart ngrok-stream
+
 
 
 echo "▶ Starting full Docker stack…"
