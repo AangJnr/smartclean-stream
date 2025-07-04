@@ -56,7 +56,7 @@ if [ -z "$NGROK_BIN" ]; then
 fi
 
 echo "▶ Writing $HOME/.ngrok2/ngrok.yml"
-mkdir -p "$HOME/.ngrok"
+mkdir -p "$HOME/.ngrok2"
 cat <<EOF > "$HOME/.ngrok2/ngrok.yml"
 authtoken: $NGROK_AUTHTOKEN
 region: eu
